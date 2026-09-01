@@ -1,0 +1,47 @@
+name: UR空室監視
+
+on:
+  schedule:
+    # GitHubで指定できる最短間隔である5分ごとに起動します。
+    # スクリプト内で毎回0〜4分のランダム待機を挟むことで、
+    # 実際のチェック間隔がおよそ5〜10分の範囲でばらつくようにしています。
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+# 前回の実行がまだ終わっていない場合は、次の実行を順番待ちさせる
+# (state.jsonへの同時書き込みによる競合を防ぐため)
+concurrency:
+  group: ur-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Pythonをセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 依存パッケージをインストール
+        run: pip install -r requirements.txt
+
+      - name: 空室チェックを実行
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python check_ur.py
+
+      - name: 状態ファイルの変更をコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git diff --staged --quiet || git commit -m "空室状態を更新 [skip ci]"
+          git push
