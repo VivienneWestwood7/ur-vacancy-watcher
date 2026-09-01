@@ -40,8 +40,34 @@ jobs:
 
       - name: 状態ファイルの変更をコミット
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state.json
-          git diff --staged --quiet || git commit -m "空室状態を更新 [skip ci]"
-          git push
+
+          if git diff --staged --quiet; then
+            echo "状態に変化なし。コミットをスキップします。"
+            exit 0
+          fi
+
+          git commit -m "空室状態を更新 [skip ci]"
+
+          # 他の実行(手動push含む)と競合してpushが拒否された場合に備えて、
+          # 最新のリモートを取り込んでから数回リトライする
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "pushに成功しました"
+              exit 0
+            fi
+            echo "pushが競合しました。リトライします... (${i}回目)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "rebaseに失敗しました(state.jsonの内容が競合しています)"
+              git rebase --abort
+              exit 1
+            fi
+            sleep $(( (RANDOM % 10) + 5 ))
+          done
+
+          echo "pushに複数回失敗しました"
+          exit 1
