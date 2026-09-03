@@ -46,6 +46,11 @@ TARGET_PROPERTIES = [
     ("南大沢学園四番街", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_5280.html"),
     ("グランピア南大沢", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_6250.html"),
     ("ライブ長池 ビューコート別所", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_6260.html"),
+    ("光が丘パークタウン 大通り中央", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_4550.html"),
+    ("光が丘パークタウン 大通り南", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_3690.html"),
+    ("光が丘パークタウン プロムナード十番街", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_4350.html"),
+    ("シャレール荻窪", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_7130.html"),
+    ("アーバンライフゆりの木通り東", "https://www.ur-net.go.jp/chintai/kanto/tokyo/20_4590.html"),
 ]
 
 # 通知する床面積の下限(㎡)
