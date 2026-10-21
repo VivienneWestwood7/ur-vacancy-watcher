@@ -3,61 +3,26 @@
 楽天市場商品検索APIで `2nd-street` の商品を新着順（`-updateTimestamp`）に直近30件取得し、
 まだ通知していない商品（`itemCode` で判定）だけを Discord Webhook に通知します。
 
-## エンドポイント
+GitHub Actions（`.github/workflows/rakuten_2ndstreet.yml`）で10分ごとに無料で実行され、
+通知済みの itemCode は `rakuten_2ndstreet/state.json` に記録されます。
 
-| パス | 内容 |
-|---|---|
-| `GET /` | ヘルスチェック |
-| `GET/POST /check` | 1回チェックを実行し、結果をJSONで返す |
+## セットアップ
 
-## 環境変数
+リポジトリの Settings → Secrets and variables → Actions → New repository secret で登録します。
 
-| 名前 | 必須 | 説明 |
+| Secret名 | 必須 | 内容 |
 |---|---|---|
-| `DISCORD_WEBHOOK_URL` | ○ | 通知先の Discord Webhook URL |
-| `RAKUTEN_ACCESS_KEY` | ○ | 楽天ウェブサービスのアクセスキー（2026年の新API仕様で必須） |
-| `RAKUTEN_REFERER` | △ | 楽天アプリ設定に登録したWebサイトURL。Refererチェックで403になる場合に設定 |
-| `RAKUTEN_APP_ID` | | アプリケーションID（既定: `0d16e53b-cf1c-448e-aabe-5c49594bee17`） |
-| `RAKUTEN_API_URL` | | APIエンドポイント（既定: `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701`） |
-| `STATE_BUCKET` | 推奨 | 通知済み itemCode を保存する GCS バケット名 |
-| `STATE_OBJECT` | | GCS上のオブジェクト名（既定: `rakuten_2ndstreet_state.json`） |
-| `STATE_FILE` | | `STATE_BUCKET` 未設定時のローカル保存先（既定: `/tmp/rakuten_2ndstreet_state.json`） |
+| `RAKUTEN_ACCESS_KEY` | ○ | 楽天ウェブサービスのアクセスキー |
+| `DISCORD_WEBHOOK_URL_2NDSTREET` | | 通知先の Discord Webhook URL。未登録ならUR監視と同じ `DISCORD_WEBHOOK_URL` を使う |
+| `RAKUTEN_REFERER` | | 楽天アプリ設定に登録したWebサイトURL。楽天APIが403を返す場合に登録 |
 
-Cloud Run のローカルディスクはインスタンスが入れ替わると消えるため、
-重複通知を確実に防ぐには `STATE_BUCKET` を設定してください。
-
-## デプロイ例
-
-```bash
-cd rakuten_2ndstreet
-
-gcloud storage buckets create gs://YOUR_BUCKET --location=asia-northeast1
-
-gcloud run deploy rakuten-2ndstreet-watcher \
-  --source . \
-  --region asia-northeast1 \
-  --no-allow-unauthenticated \
-  --max-instances 1 \
-  --set-env-vars "DISCORD_WEBHOOK_URL=...,RAKUTEN_ACCESS_KEY=...,STATE_BUCKET=YOUR_BUCKET"
-```
-
-Cloud Run のサービスアカウントにはバケットへの `roles/storage.objectAdmin` を付与してください。
-
-### 定期実行（Cloud Scheduler）
-
-```bash
-gcloud scheduler jobs create http rakuten-2ndstreet-check \
-  --location asia-northeast1 \
-  --schedule "*/10 * * * *" \
-  --uri "https://<Cloud RunのURL>/check" \
-  --http-method POST \
-  --oidc-service-account-email <呼び出し用サービスアカウント>
-```
+スケジュール実行はデフォルトブランチ（main）にあるワークフローだけが動きます。
+登録後、Actions タブの「セカンドストリート新着監視」→ Run workflow で手動実行して動作を確認してください。
+初回は通知済みの記録がないため、直近30件がまとめて通知されます。
 
 ## ローカル実行
 
 ```bash
 pip install -r requirements.txt
-DISCORD_WEBHOOK_URL=... RAKUTEN_ACCESS_KEY=... python main.py
-curl localhost:8080/check
+DISCORD_WEBHOOK_URL=... RAKUTEN_ACCESS_KEY=... python check_2ndstreet.py
 ```
