@@ -1,0 +1,32 @@
+name: UR空室監視 日次レポート
+
+# cron-job.org から毎日決まった時刻に起動します(外部からの起動のみ)。
+# 監視本体(watch.yml)の実行回数・成功回数を集計してDiscordへ通知します。
+on:
+  workflow_dispatch: {}
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Pythonをセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 依存パッケージをインストール
+        run: pip install -r requirements.txt
+
+      - name: 日次レポートを送信
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python report_daily.py

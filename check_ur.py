@@ -252,11 +252,13 @@ def main():
     state = load_state()
     new_state = dict(state)  # 更新後の状態(このチェックで見つかった全空室IDに置き換える)
     total_new = 0
+    failed_count = 0
 
     for property_name, url in TARGET_PROPERTIES:
         try:
             rooms = fetch_rooms_via_api(url, property_name)
         except (requests.RequestException, ValueError, json.JSONDecodeError) as e:
+            failed_count += 1
             print(f"!! 取得失敗: {url} ({e})")
             # 取得失敗時は前回の状態を保持しておく(誤って空室リストを消さないため)
             if url in state:
@@ -287,7 +289,14 @@ def main():
         time.sleep(random.uniform(1.5, 4.0))
 
     save_state(new_state)
-    print(f"完了: 新規通知 {total_new} 件")
+    print(f"完了: 新規通知 {total_new} 件 / 取得失敗 {failed_count}/{len(TARGET_PROPERTIES)} 団地")
+
+    # 全団地の取得に失敗した場合は、実行自体を「失敗」として記録する
+    # (日次レポートで失敗回数として数えられ、異常に気づけるようにするため)
+    if failed_count == len(TARGET_PROPERTIES):
+        print("!! 全団地の取得に失敗しました")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
